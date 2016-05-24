@@ -36,6 +36,7 @@ function render_Stereo_element_content($content, $picture)
 	}
 	return $content . ' <img src="' .$gif_url . '" id="stereoGif" />
   <script type="text/javascript" src=\'plugins/Stereo/libgif.js\' ></script>
+  <script type="text/javascript" src=\'plugins/Stereo/hammer.js\' ></script>
   <script type="text/javascript" src=\'plugins/Stereo/wiggleAdjust.js\' ></script>
   <script type="text/javascript">
      var img = document.getElementById(\'stereoGif\');
@@ -52,8 +53,8 @@ function Stereo_generate_gif( $picture, $gif_path ) {
 	 $rjpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
 	 $ljpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
 	 //TODO: security!
-	 exec( "exiftool -trailer:all= $orig_path -o $rjpg" );
-	 exec( "exiftool $orig_path -mpimage2 -b > $ljpg" );
+	 exec( "exiftool -trailer:all= '$orig_path' -o $rjpg" );
+	 exec( "exiftool '$orig_path' -mpimage2 -b > $ljpg" );
 	 exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
 	 exec( "rm $rjpg $ljpg" );
 }

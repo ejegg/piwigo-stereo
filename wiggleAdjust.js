@@ -57,11 +57,25 @@
 				superGif.set_frame_offset(1, offset);
 				e.preventDefault();
 			},
+			mc,
+			swipeHandler = function( e ) {
+				offset.x += e.velocityX;
+				offset.y += e.velocityY;
+				superGif.set_frame_offset(1, offset);
+				var dbgText = document.createElement( 'p' );
+				dbgText.appendChild( document.createTextNode( JSON.stringify( e ) ) );
+				document.body.appendChild( dbgText );
+			},
 			attach = function() {
 				document.addEventListener('keydown', listener, false);
+				mc = new Hammer.Manager(document.body);
+				mc.add( new Hammer.Swipe({ direction: Hammer.DIRECTION_ALL, threshold: 0 } ) );
+				mc.on( 'swipe', swipeHandler );
 			},
 			detach = function() {
 				document.removeEventListener('keydown', listener, false);
+				mc.remove( 'swipe' );
+				mc.destroy();
 			},
 			getOffset = function() {
 				return offset;
