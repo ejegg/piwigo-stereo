@@ -23,8 +23,9 @@
 		root.WiggleAdjust = factory();
 	}
 }(this, function () {
-	var WiggleAdjust = function (superGif) {
+	var WiggleAdjust = function (superGif, identifier) {
 		var offset = { x: 0, y: 0 },
+			storageKey = 'wiggle' + ( identifier || document.location.pathname ),
 			listener = function(e) {
 				var adjusting = true,
 					delta = e.shiftKey ? 10 : 1;
@@ -54,23 +55,16 @@
 					return;
 				}
 
-				superGif.set_frame_offset(1, offset);
+				superGif.set_frame_offset( 1, offset );
+				storeOffset( offset );
 				e.preventDefault();
 			},
 			mc,
 			swipeHandler = function( e ) {
 				offset.x += e.velocityX;
 				offset.y += e.velocityY;
-				superGif.set_frame_offset(1, offset);
-				var dbgText = document.createElement( 'p' );
-				dbgText.appendChild( document.createTextNode( JSON.stringify( e ) ) );
-				document.body.appendChild( dbgText );
-			},
-			attach = function() {
-				document.addEventListener('keydown', listener, false);
-				mc = new Hammer.Manager(document.body);
-				mc.add( new Hammer.Swipe({ direction: Hammer.DIRECTION_ALL, threshold: 0 } ) );
-				mc.on( 'swipe', swipeHandler );
+				superGif.set_frame_offset( 1, offset );
+				storeOffset( offset );
 			},
 			detach = function() {
 				document.removeEventListener('keydown', listener, false);
@@ -79,9 +73,36 @@
 			},
 			getOffset = function() {
 				return offset;
+			},
+			storeOffset = function( offset ) {
+				var serialized = offset.x + '|' + offset.y;
+				window.localStorage.setItem( storageKey, serialized );
+			},
+			getStoredOffset = function() {
+				var serialized = window.localStorage.getItem( storageKey ),
+					exploded;
+				if ( !serialized ) {
+					return false;
+				}
+				exploded = serialized.split( '|' );
+				return {
+					x: exploded[0],
+					y: exploded[1]
+				};
 			};
 
-		attach();
+		return {
+			attach: function() {
+				var storedOffset = getStoredOffset();
+				document.addEventListener('keydown', listener, false);
+				mc = new Hammer.Manager(document.body);
+				mc.add( new Hammer.Swipe({ direction: Hammer.DIRECTION_ALL, threshold: 0 } ) );
+				mc.on( 'swipe', swipeHandler );
+				if ( storedOffset ) {
+					superGif.set_frame_offset( 1, storedOffset );
+				}
+			}
+		};
 	};
 
 	return WiggleAdjust;

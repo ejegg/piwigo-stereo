@@ -34,17 +34,18 @@ function render_Stereo_element_content($content, $picture)
 	if ( !file_exists( $absolute_path ) ) {
 		Stereo_generate_gif( $picture, $absolute_path );
 	}
-	return $content . ' <img src="' .$gif_url . '" id="stereoGif" />
-  <script type="text/javascript" src=\'plugins/Stereo/libgif.js\' ></script>
-  <script type="text/javascript" src=\'plugins/Stereo/hammer.js\' ></script>
-  <script type="text/javascript" src=\'plugins/Stereo/wiggleAdjust.js\' ></script>
-  <script type="text/javascript">
-     var img = document.getElementById(\'stereoGif\');
+	$rel_dir = 'plugins/' . basename( realpath( __DIR__ . '/..' ) );
+	return $content . " <img src=\"$gif_url\" id=\"stereoGif\" />
+  <script type=\"text/javascript\" src=\"$rel_dir/libgif.js\" ></script>
+  <script type=\"text/javascript\" src=\"$rel_dir/hammer.js\" ></script>
+  <script type=\"text/javascript\" src=\"$rel_dir/wiggleAdjust.js\" ></script>
+  <script type=\"text/javascript\">
+     var img = document.getElementById('stereoGif');
      var superG = new SuperGif({gif:img});
-     var adust = new WiggleAdjust(superG);
-     superG.load();
+     var adjust = new WiggleAdjust(superG, {$picture['id']});
+     superG.load( adjust.attach );
   </script>
-';
+";
 }
 
 function Stereo_generate_gif( $picture, $gif_path ) {
