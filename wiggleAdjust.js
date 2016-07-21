@@ -23,7 +23,7 @@
 		root.WiggleAdjust = factory();
 	}
 }(this, function () {
-	var WiggleAdjust = function (superGif, identifier) {
+	return function (superGif, identifier) {
 		var offset = { x: 0, y: 0 },
 			storageKey = 'wiggle' + ( identifier || document.location.pathname ),
 			listener = function(e) {
@@ -66,14 +66,6 @@
 				superGif.set_frame_offset( 1, offset );
 				storeOffset( offset );
 			},
-			detach = function() {
-				document.removeEventListener('keydown', listener, false);
-				mc.remove( 'swipe' );
-				mc.destroy();
-			},
-			getOffset = function() {
-				return offset;
-			},
 			storeOffset = function( offset ) {
 				var serialized = offset.x + '|' + offset.y;
 				window.localStorage.setItem( storageKey, serialized );
@@ -101,9 +93,15 @@
 				if ( storedOffset ) {
 					superGif.set_frame_offset( 1, storedOffset );
 				}
+			},
+			detach: function() {
+				document.removeEventListener('keydown', listener, false);
+				mc.remove( 'swipe' );
+				mc.destroy();
+			},
+			getOffset: function() {
+				return offset;
 			}
 		};
 	};
-
-	return WiggleAdjust;
 }));
