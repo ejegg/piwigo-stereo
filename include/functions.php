@@ -20,7 +20,7 @@
 
 function render_Stereo_element_content($content, $picture)
 {
-	global $page;
+	global $page, $prefixeTable;
 
 	if ( isset($page['slideshow']) and $page['slideshow'] ) {
 		return $content;
@@ -35,6 +35,16 @@ function render_Stereo_element_content($content, $picture)
 		Stereo_generate_gif( $picture, $absolute_path );
 	}
 	$rel_dir = 'plugins/' . basename( realpath( __DIR__ . '/..' ) );
+	$query = '
+		SELECT *
+		FROM '.$prefixeTable.'stereo
+		WHERE media_id = ' . $picture['id'];
+	$offset = pwg_db_fetch_assoc(pwg_query($query));
+	$jsOffset = '';
+	if ( $offset ) {
+		$jsOffset = ", { x: {$offset['x']}, y: {$offset['y']} }";
+	}
+
 	return $content . " <img src=\"$gif_url\" id=\"stereoGif\" />
   <script type=\"text/javascript\" src=\"$rel_dir/libgif.js\" ></script>
   <script type=\"text/javascript\" src=\"$rel_dir/hammer.js\" ></script>
@@ -42,7 +52,7 @@ function render_Stereo_element_content($content, $picture)
   <script type=\"text/javascript\">
      var img = document.getElementById('stereoGif');
      var superG = new SuperGif({gif:img});
-     var adjust = new WiggleAdjust(superG, {$picture['id']});
+     var adjust = new WiggleAdjust(superG, {$picture['id']}$jsOffset);
      superG.load( adjust.attach );
   </script>
 ";
@@ -61,13 +71,21 @@ function Stereo_generate_gif( $picture, $gif_path ) {
 }
 
 function Stereo_tabsheet( $tabs, $context ) {
-	global $admin_photo_base_url;
+	global $prefixeTable;
 	if ( $context != 'photo' ) {
 		return $tabs;
 	}
-	$tabs['stereo'] = array(
-		'caption' => 'Stereo adjustment',
-		'url' => get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id']
-	);
+	check_input_parameter('image_id', $_GET, false, PATTERN_ID);
+	$id = $_GET['image_id'];
+	$query = '
+		SELECT file from '.$prefixeTable.'images
+		WHERE id = ' . $id;
+	$result = pwg_db_fetch_assoc(pwg_query($query));
+	if ( $result && preg_match ( '/.*mpo$/i', $result['file'] ) ) {
+		$tabs['stereo'] = array(
+			'caption' => 'Stereo adjustment',
+			'url' => get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id']
+		);
+	}
 	return $tabs;
 }

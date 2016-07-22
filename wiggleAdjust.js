@@ -23,9 +23,8 @@
 		root.WiggleAdjust = factory();
 	}
 }(this, function () {
-	return function (superGif, identifier) {
-		var offset = { x: 0, y: 0 },
-			storageKey = 'wiggle' + ( identifier || document.location.pathname ),
+	return function (superGif, identifier, offset) {
+		var storageKey = 'wiggle' + ( identifier || document.location.pathname ),
 			listener = function(e) {
 				var adjusting = true,
 					delta = e.shiftKey ? 10 : 1;
@@ -78,11 +77,11 @@
 				}
 				exploded = serialized.split( '|' );
 				return {
-					x: exploded[0],
-					y: exploded[1]
+					x: parseInt( exploded[0], 10 ),
+					y: parseInt( exploded[1], 10 )
 				};
 			};
-
+		offset = offset || { x: 0, y: 0 };
 		return {
 			attach: function() {
 				var storedOffset = getStoredOffset();
@@ -91,8 +90,9 @@
 				mc.add( new Hammer.Swipe({ direction: Hammer.DIRECTION_ALL, threshold: 0 } ) );
 				mc.on( 'swipe', swipeHandler );
 				if ( storedOffset ) {
-					superGif.set_frame_offset( 1, storedOffset );
+					offset = storedOffset;
 				}
+				superGif.set_frame_offset( 1, offset );
 			},
 			detach: function() {
 				document.removeEventListener('keydown', listener, false);

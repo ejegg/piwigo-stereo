@@ -1,4 +1,5 @@
 <?php
+include_once( __DIR__ . '/include/functions.php' );
 
 /* 
  * Copyright (C) 2015 Elliott Eggleston <ejegg@ejegg.com>
@@ -27,24 +28,71 @@ if (!isset($_GET['image_id']) or !isset($_GET['section']))
 {
 	die('Invalid data!');
 }
+global $template, $page, $prefixeTable;
 
 check_input_parameter('image_id', $_GET, false, PATTERN_ID);
+$id = $_GET['image_id'];
 
-$admin_photo_base_url = get_root_url().'admin.php?page=photo-'.$_GET['image_id'];
-$self_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id'];
+$query = '
+		SELECT *
+		FROM '.$prefixeTable.'images i
+		LEFT JOIN '.$prefixeTable.'stereo s
+		ON i.id = s.media_id
+		WHERE i.id = ' . $id;
+$picture = pwg_db_fetch_assoc(pwg_query($query));
 
-global $template;
+if (isset($_POST['submit']))
+{
+	check_pwg_token();
 
-$template->set_filename('plugin_admin_content', STEREO_PATH . 'admin.tpl');
-$template->assign_var_from_handle('ADMIN_CONTENT', 'plugin_admin_content');
+	$offsetX = trim($_POST['offsetX']);
+	$offsetY = trim($_POST['offsetY']);
+	if (
+		strlen($offsetX) === 0 ||
+		strlen($offsetY) === 0 ||
+		!is_numeric($offsetX) ||
+		!is_numeric($offsetY)
+	) {
+		$page['errors'][] = 'Invalid offset value';
+	}
+
+	if (count($page['errors']) === 0 ) {
+		$stereoTable = $prefixeTable.'stereo';
+		if ( isset($picture['x']) ) {
+			$query =
+				"UPDATE $stereoTable
+				SET x=$offsetX, y=$offsetY
+				WHERE media_id = $id;";
+		} else {
+			$picture['x'] = $offsetX;
+			$picture['y'] = $offsetY;
+			$query =
+				"INSERT INTO $stereoTable (media_id, x, y)
+				VALUES ($id, $offsetX, $offsetY)";
+		}
+		pwg_query($query);
+		array_push( $page['infos'], 'Frame offset was updated');
+	}
+}
+
+// needed for the photo tabsheet
+$admin_photo_base_url = get_root_url().'admin.php?page=photo-'.$id;
+$self_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$id;
 
 include_once(PHPWG_ROOT_PATH.'admin/include/tabsheet.class.php');
 $tabsheet = new tabsheet();
 $tabsheet->set_id('photo');
 $tabsheet->select('stereo');
 $tabsheet->assign();
+
 $template->assign(array(
 	'PWG_TOKEN' => get_pwg_token(),
 	'F_ACTION'  => $self_url,
-	'TITLE'     => 'Stereo adjustment for a picture',
+	'TITLE'     => render_element_name($picture),
+	'PICTURE'   => render_Stereo_element_content('', $picture),
+	'OFFSET_X'  => empty( $picture['x'] ) ? 0 : $picture['x'],
+	'OFFSET_Y'  => empty( $picture['y'] ) ? 0 : $picture['y'],
 ));
+
+$template->set_filename('plugin_admin_content', STEREO_PATH . 'admin.tpl');
+$template->assign_var_from_handle('ADMIN_CONTENT', 'plugin_admin_content');
