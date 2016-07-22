@@ -1,7 +1,7 @@
 <?php
 
 /* 
- * Copyright (C) 2015 elliott
+ * Copyright (C) 2016 elliott
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -84,8 +84,13 @@ function Stereo_tabsheet( $tabs, $context ) {
 	if ( $result && preg_match ( '/.*mpo$/i', $result['file'] ) ) {
 		$tabs['stereo'] = array(
 			'caption' => 'Stereo adjustment',
-			'url' => get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id']
+			'url' => Stereo_get_admin_url( $id )
 		);
 	}
 	return $tabs;
+}
+function Stereo_get_admin_url( $id ) {
+	$plug_dir = basename( realpath( __DIR__ . '/..' ) );
+	return get_root_url() . 'admin.php?page=plugin&amp;section=' .
+		$plug_dir . '/admin.php&amp;image_id=' . $id;
 }

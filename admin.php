@@ -1,8 +1,7 @@
 <?php
-include_once( __DIR__ . '/include/functions.php' );
 
 /* 
- * Copyright (C) 2015 Elliott Eggleston <ejegg@ejegg.com>
+ * Copyright (C) 2016 Elliott Eggleston <ejegg@ejegg.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -77,7 +76,7 @@ if (isset($_POST['submit']))
 
 // needed for the photo tabsheet
 $admin_photo_base_url = get_root_url().'admin.php?page=photo-'.$id;
-$self_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$id;
+$self_url = Stereo_get_admin_url( $id );
 
 include_once(PHPWG_ROOT_PATH.'admin/include/tabsheet.class.php');
 $tabsheet = new tabsheet();
