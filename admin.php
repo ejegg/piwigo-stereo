@@ -19,3 +19,32 @@
  */
 
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
+// Check access and exit when user status is not ok
+check_status(ACCESS_ADMINISTRATOR);
+// FIXME: Duplicated boilerplate - could be avoided with a hook in the else
+// clause at the bottom of admin/photo.php letting you set the right include file
+if (!isset($_GET['image_id']) or !isset($_GET['section']))
+{
+	die('Invalid data!');
+}
+
+check_input_parameter('image_id', $_GET, false, PATTERN_ID);
+
+$admin_photo_base_url = get_root_url().'admin.php?page=photo-'.$_GET['image_id'];
+$self_url = get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id'];
+
+global $template;
+
+$template->set_filename('plugin_admin_content', STEREO_PATH . 'admin.tpl');
+$template->assign_var_from_handle('ADMIN_CONTENT', 'plugin_admin_content');
+
+include_once(PHPWG_ROOT_PATH.'admin/include/tabsheet.class.php');
+$tabsheet = new tabsheet();
+$tabsheet->set_id('photo');
+$tabsheet->select('stereo');
+$tabsheet->assign();
+$template->assign(array(
+	'PWG_TOKEN' => get_pwg_token(),
+	'F_ACTION'  => $self_url,
+	'TITLE'     => 'Stereo adjustment for a picture',
+));

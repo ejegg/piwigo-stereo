@@ -61,9 +61,13 @@ function Stereo_generate_gif( $picture, $gif_path ) {
 }
 
 function Stereo_tabsheet( $tabs, $context ) {
+	global $admin_photo_base_url;
+	if ( $context != 'photo' ) {
+		return $tabs;
+	}
 	$tabs['stereo'] = array(
 		'caption' => 'Stereo adjustment',
-		'url' => 'admin.php?page=photo-6-stereo'
+		'url' => get_root_url().'admin.php?page=plugin&amp;section=piwigo-stereo/admin.php&amp;image_id='.$_GET['image_id']
 	);
 	return $tabs;
 }
