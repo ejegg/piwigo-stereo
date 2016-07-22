@@ -1,15 +1,15 @@
 <?php
 /*
-Version: 0.1
+Version: 0.2
 Plugin Name: Stereo
-Plugin URI: 
+Plugin URI: https://github.com/ejegg/piwigo-stereo
 Author: Elliott Eggleston <ejegg@ejegg.com>
 Author URI: http://ejegg.com
 Description: Display and manage stereoscopic (3D / 3-D) images.
 */
 
 /* 
- * Copyright (C) 2015 Elliott Eggleston <ejegg@ejegg.com>
+ * Copyright (C) 2016 Elliott Eggleston <ejegg@ejegg.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -37,4 +37,3 @@ include_once( __DIR__ . '/include/functions.php' );
 
 add_event_handler('render_element_content', 'render_Stereo_element_content', 40, 2 ); //TODO: what are these numbers?
 add_event_handler('tabsheet_before_select', 'Stereo_tabsheet');
-#add_event_handler('loc_end_picture_modify', 'Stereo_modify');
