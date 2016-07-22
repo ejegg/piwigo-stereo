@@ -19,3 +19,27 @@
  */
 
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
+
+function plugin_install() {
+	global $prefixeTable;
+
+	$query = '
+    CREATE TABLE IF NOT EXISTS '.$prefixeTable.'stereo (
+      media_id int(11) NOT NULL,
+      x int NOT NULL DEFAULT 0,
+      y int NOT NULL DEFAULT 0,
+      PRIMARY KEY (media_id)
+    ) ENGINE = MyISAM
+    ;';
+	pwg_query($query);
+}
+
+
+function plugin_uninstall() {
+	global $prefixeTable;
+
+	$query = '
+    DROP TABLE '.$prefixeTable.'stereo
+    ;';
+	pwg_query($query);
+}
