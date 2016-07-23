@@ -1,6 +1,6 @@
 <?php
 /*
-Version: 0.2
+Version: 0.2.1
 Plugin Name: Stereo
 Plugin URI: https://github.com/ejegg/piwigo-stereo
 Author: Elliott Eggleston <ejegg@ejegg.com>
