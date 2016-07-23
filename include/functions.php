@@ -59,15 +59,55 @@ function render_Stereo_element_content($content, $picture)
 }
 
 function Stereo_generate_gif( $picture, $gif_path ) {
-	 $orig_path = realpath($picture['path']);
+	$orig_path = realpath( $picture['path'] );
 
-	 $rjpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
-	 $ljpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
-	 //TODO: security!
-	 exec( "exiftool -trailer:all= '$orig_path' -o $rjpg" );
-	 exec( "exiftool '$orig_path' -mpimage2 -b > $ljpg" );
-	 exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
-	 exec( "rm $rjpg $ljpg" );
+	$rjpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
+	$ljpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
+
+	// First split the MPO file into 2 JPEGs
+	$marker = hex2bin( 'ffd8ffe1' ); // EXIF start-of-image + app1 header
+	$in = fopen( $orig_path, 'rb' );
+	$out = fopen( $rjpg, 'wb' ); // MPO stores the right image first
+	$chunk_size = 1024 * 100; // Read 100k at a time
+	$first = true; // Are we still reading / writing the first picture?
+	$last_chunk = ''; // Save in case the marker crosses a chunk boundary
+	do {
+		$chunk = fread( $in, $chunk_size );
+		if ( $first ) {
+			$search_space = $last_chunk . $chunk;
+			// Start searching 32 bytes in to skip the first marker
+			$pos = strpos( $search_space, $marker, 32 );
+			if ( $pos === false ) {
+				fwrite( $out, $chunk );
+				// Save the last 64 bytes of the chunk
+				$last_chunk = substr( $chunk, -64 );
+			} else {
+				// Found the marker!
+				// Correct position for the last chunk
+				$pos = $pos - strlen( $last_chunk );
+				// Write the final bit of the first JPEG
+				fwrite( $out, $chunk, $pos );
+				fclose( $out );
+				// Now open the second file and write the rest of the chunk
+				$out = fopen( $ljpg, 'wb' );
+				fwrite( $out, substr( $chunk, $pos ) );
+				$first = false;
+			}
+		} else {
+			fwrite( $out, $chunk );
+		}
+	} while ( !feof( $in ) );
+	fclose( $in );
+	fclose( $out );
+
+	// Then combine the two into a single gif
+	// TODO: get rid of exec, though php-gd doesn't support animation
+	// TODO: multiple sizes?
+	exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
+
+	// And delete the temp files
+	unlink( $rjpg );
+	unlink( $ljpg );
 }
 
 function Stereo_tabsheet( $tabs, $context ) {
