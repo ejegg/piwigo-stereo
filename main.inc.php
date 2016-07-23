@@ -2,9 +2,9 @@
 /*
 Version: 0.2.1
 Plugin Name: Stereo
-Plugin URI: https://github.com/ejegg/piwigo-stereo
+Plugin URI: http://piwigo.org/ext/extension_view.php?eid=836
 Author: Elliott Eggleston <ejegg@ejegg.com>
-Author URI: http://ejegg.com
+Author URI: https://ejegg.com
 Description: Display and manage stereoscopic (3D / 3-D) images.
 */
 
