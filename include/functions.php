@@ -20,7 +20,7 @@
 
 function Stereo_render_element_content($content, $picture)
 {
-	global $page, $prefixeTable;
+	global $page, $prefixeTable, $template;
 
 	if ( isset($page['slideshow']) and $page['slideshow'] ) {
 		return $content;
@@ -44,18 +44,13 @@ function Stereo_render_element_content($content, $picture)
 	if ( $offset ) {
 		$jsOffset = ", { x: {$offset['x']}, y: {$offset['y']} }";
 	}
-
-	return $content . " <img src=\"$gif_url\" id=\"stereoGif\" />
-  <script type=\"text/javascript\" src=\"$rel_dir/libgif.js\" ></script>
-  <script type=\"text/javascript\" src=\"$rel_dir/hammer.js\" ></script>
-  <script type=\"text/javascript\" src=\"$rel_dir/wiggleAdjust.js\" ></script>
-  <script type=\"text/javascript\">
-     var img = document.getElementById('stereoGif');
-     var superG = new SuperGif({gif:img});
-     var adjust = new WiggleAdjust(superG, {$picture['id']}$jsOffset);
-     superG.load( adjust.attach );
-  </script>
-";
+	$template->set_filename( 'Stereo_picture', STEREO_PATH . '/picture.tpl' );
+	$template->assign( array(
+		'GIF_URL' => $gif_url,
+		'REL_DIR' => $rel_dir,
+		'WIGGLE_PARAMS' => $picture['id'] . $jsOffset,
+	) );
+	return $content . $template->parse( 'Stereo_picture', true );
 }
 
 function Stereo_generate_gif( $picture, $gif_path ) {
