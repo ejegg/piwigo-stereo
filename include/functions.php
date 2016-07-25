@@ -125,8 +125,75 @@ function Stereo_tabsheet( $tabs, $context ) {
 	}
 	return $tabs;
 }
+
 function Stereo_get_admin_url( $id ) {
 	$plug_dir = basename( realpath( __DIR__ . '/..' ) );
 	return get_root_url() . 'admin.php?page=plugin&amp;section=' .
 		$plug_dir . '/admin.php&amp;image_id=' . $id;
+}
+
+function Stereo_loc_end_element_set_global() {
+	global $template;
+
+	load_language( 'plugin.lang', STEREO_PATH );
+
+	$template->set_filename( 'Stereo_batch_global', STEREO_PATH . '/batch_global.tpl' );
+	$template->append( 'element_set_global_plugins_actions',
+		array(
+			'ID' => 'stereo',
+			'NAME'=>l10n('STEREO_ADJUSTMENT'),
+			'CONTENT' => $template->parse( 'Stereo_batch_global', true )
+		)
+	);
+}
+
+function Stereo_element_set_global_action( $action, $collection ) {
+	if ( $action !== 'stereo' ) {
+		return;
+	}
+
+	global $page, $prefixeTable;
+	load_language( 'plugin.lang', STEREO_PATH );
+
+	$x = trim( $_POST['offsetX'] );
+	$y = trim( $_POST['offsetY'] );
+
+	$set = array();
+	if ( $x !== '' && is_numeric( $x ) ) {
+		$set[] = "x = $x";
+	}
+	if ( $y !== '' && is_numeric( $y ) ) {
+		$set[] = "y = $y";
+	}
+
+	if ( empty( $set ) ) {
+		$page['errors'][] = l10n( 'STEREO_BATCH_NO_INPUT' );
+	} else {
+		$update_query = 'UPDATE ' . $prefixeTable . 'stereo SET ' .
+			implode( ',', $set ) .
+			' WHERE media_id IN (' . implode( ',', $collection ) . ')';
+		pwg_query($update_query);
+		$page['infos'][] = l10n( 'STEREO_EDIT_SUCCESS' );
+	}
+}
+
+
+function Stereo_get_batch_manager_prefilters( $prefilters ) {
+	load_language( 'plugin.lang', STEREO_PATH );
+
+	$prefilters[] = array(
+		'ID' => 'stereo0',
+		'NAME' => l10n( '3D_FILTER' )
+	);
+	return $prefilters;
+}
+
+function Stereo_perform_batch_manager_prefilters( $filter_sets, $prefilter ) {
+	if ( $prefilter === 'stereo0' ) {
+		$query = "SELECT id FROM " . IMAGES_TABLE .
+			" WHERE UPPER( RIGHT( file, 3 ) ) = 'MPO'";
+		$filter_sets[] = query2array( $query, null, 'id' );
+	}
+
+	return $filter_sets;
 }

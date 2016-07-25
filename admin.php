@@ -70,7 +70,7 @@ if (isset($_POST['submit']))
 				VALUES ($id, $offsetX, $offsetY)";
 		}
 		pwg_query($query);
-		array_push( $page['infos'], 'Frame offset was updated');
+		array_push( $page['infos'], l10n( 'STEREO_EDIT_SUCCESS' ) );
 	}
 }
 

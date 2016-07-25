@@ -37,3 +37,7 @@ include_once( __DIR__ . '/include/functions.php' );
 
 add_event_handler('render_element_content', 'Stereo_render_element_content', 40, 2 ); //TODO: what are these numbers?
 add_event_handler('tabsheet_before_select', 'Stereo_tabsheet');
+add_event_handler('loc_end_element_set_global', 'Stereo_loc_end_element_set_global');
+add_event_handler('element_set_global_action', 'Stereo_element_set_global_action', 40, 2);
+add_event_handler('get_batch_manager_prefilters', 'Stereo_get_batch_manager_prefilters');
+add_event_handler('perform_batch_manager_prefilters', 'Stereo_perform_batch_manager_prefilters', 40, 2);
