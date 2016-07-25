@@ -1,7 +1,7 @@
 
 <h2>{$TITLE} &#8250; {'Edit photo'|@translate} {$TABSHEET_TITLE}</h2>
 
-<p>Use H, J, K, and L keys to change the frame offsets. Hold shift to move 10 pixels.</p>
+<p>{'STEREO_INSTRUCTION'|@translate}</p>
 <form id="stereoForm" method="post" action="{$F_ACTION}">
     <input type="hidden" name="offsetX" id="offsetX" value="{$OFFSET_X}">
     <input type="hidden" name="offsetY" id="offsetY" value="{$OFFSET_Y}">

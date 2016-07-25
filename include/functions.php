@@ -115,6 +115,7 @@ function Stereo_tabsheet( $tabs, $context ) {
 	if ( $context != 'photo' ) {
 		return $tabs;
 	}
+	load_language('plugin.lang', STEREO_PATH);
 	check_input_parameter('image_id', $_GET, false, PATTERN_ID);
 	$id = $_GET['image_id'];
 	$query = '
@@ -123,7 +124,7 @@ function Stereo_tabsheet( $tabs, $context ) {
 	$result = pwg_db_fetch_assoc(pwg_query($query));
 	if ( $result && preg_match ( '/.*mpo$/i', $result['file'] ) ) {
 		$tabs['stereo'] = array(
-			'caption' => 'Stereo adjustment',
+			'caption' => l10n('STEREO_ADJUSTMENT'),
 			'url' => Stereo_get_admin_url( $id )
 		);
 	}

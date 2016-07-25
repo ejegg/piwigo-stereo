@@ -28,7 +28,7 @@ if (!isset($_GET['image_id']) or !isset($_GET['section']))
 	die('Invalid data!');
 }
 global $template, $page, $prefixeTable;
-
+load_language('plugin.lang', STEREO_PATH);
 check_input_parameter('image_id', $_GET, false, PATTERN_ID);
 $id = $_GET['image_id'];
 
