@@ -1,6 +1,6 @@
 <?php
 /*
-Version: 0.2.1
+Version: auto
 Plugin Name: Stereo
 Plugin URI: http://piwigo.org/ext/extension_view.php?eid=836
 Author: Elliott Eggleston <ejegg@ejegg.com>
