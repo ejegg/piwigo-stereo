@@ -35,5 +35,5 @@ $conf['picture_ext'][] = 'mpo';
 
 include_once( __DIR__ . '/include/functions.php' );
 
-add_event_handler('render_element_content', 'render_Stereo_element_content', 40, 2 ); //TODO: what are these numbers?
+add_event_handler('render_element_content', 'Stereo_render_element_content', 40, 2 ); //TODO: what are these numbers?
 add_event_handler('tabsheet_before_select', 'Stereo_tabsheet');

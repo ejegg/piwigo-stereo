@@ -88,7 +88,7 @@ $template->assign(array(
 	'PWG_TOKEN' => get_pwg_token(),
 	'F_ACTION'  => $self_url,
 	'TITLE'     => render_element_name($picture),
-	'PICTURE'   => render_Stereo_element_content('', $picture),
+	'PICTURE'   => Stereo_render_element_content('', $picture),
 	'OFFSET_X'  => empty( $picture['x'] ) ? 0 : $picture['x'],
 	'OFFSET_Y'  => empty( $picture['y'] ) ? 0 : $picture['y'],
 ));
