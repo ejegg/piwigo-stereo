@@ -114,15 +114,16 @@ function Stereo_render_side_by_side( $r_path, $l_path ) {
 // Combine two jpgs into a single gif
 function Stereo_generate_gif( $rjpg, $ljpg, $gif_path ) {
 	// TODO: get rid of exec, though php-gd doesn't support animation
-	// TODO: multiple sizes?
-	exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
+	exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg $gif_path" );
 }
 
 // Split the MPO file into 2 JPEGs
 function Stereo_split_mpo( $orig_path, $r_path, $l_path ) {
+	$r_full = preg_replace( '/\.jpg$/', '_full.jpg', $r_path );
+	$l_full = preg_replace( '/\.jpg$/', '_full.jpg', $l_path );
 	$marker = hex2bin( 'ffd8ffe1' ); // EXIF start-of-image + app1 header
 	$in = fopen( $orig_path, 'rb' );
-	$out = fopen( $r_path, 'wb' ); // MPO stores the right image first
+	$out = fopen( $r_full, 'wb' ); // MPO stores the right image first
 	$chunk_size = 1024 * 100; // Read 100k at a time
 	$first = true; // Are we still reading / writing the first picture?
 	$last_chunk = ''; // Save in case the marker crosses a chunk boundary
@@ -144,7 +145,7 @@ function Stereo_split_mpo( $orig_path, $r_path, $l_path ) {
 				fwrite( $out, $chunk, $pos );
 				fclose( $out );
 				// Now open the second file and write the rest of the chunk
-				$out = fopen( $l_path, 'wb' );
+				$out = fopen( $l_full, 'wb' );
 				fwrite( $out, substr( $chunk, $pos ) );
 				$first = false;
 			}
@@ -154,6 +155,10 @@ function Stereo_split_mpo( $orig_path, $r_path, $l_path ) {
 	} while ( !feof( $in ) );
 	fclose( $in );
 	fclose( $out );
+	// Then resize the split files
+	// TODO: multiple sizes?
+	exec( "convert $l_full -resize 1024x $l_path" );
+	exec( "convert $r_full -resize 1024x $r_path" );
 }
 
 function Stereo_tabsheet( $tabs, $context ) {
