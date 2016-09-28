@@ -30,6 +30,10 @@ global $conf;
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
 define('STEREO_PATH', PHPWG_PLUGINS_PATH.basename(dirname(__FILE__)).'/');
+define('STEREO_MODE_COOKIE', 'piwigo_stereo_mode');
+define('STEREO_MODE_GIF', 'gif');
+define('STEREO_MODE_CROSS_EYED', 'cross');
+define('STEREO_MODE_WALL_EYED', 'wall');
 
 $conf['picture_ext'][] = 'mpo';
 

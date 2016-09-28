@@ -20,7 +20,7 @@
 
 function Stereo_render_element_content($content, $picture)
 {
-	global $page, $prefixeTable, $template;
+	global $page, $template;
 
 	if ( isset($page['slideshow']) and $page['slideshow'] ) {
 		return $content;
@@ -29,12 +29,55 @@ function Stereo_render_element_content($content, $picture)
 		return $content;
 	}
 	$gif_relative = preg_replace( '/jpg$/i', 'gif', $picture['path'] );
-	$gif_url = PWG_DERIVATIVE_DIR . preg_replace( '/^\.\//', '', $gif_relative );
-	$absolute_path = realpath( PWG_DERIVATIVE_DIR ) . '/' . $gif_relative;
-	if ( !file_exists( $absolute_path ) ) {
-		Stereo_generate_gif( $picture, $absolute_path );
+	$gif_absolute_path = Stereo_get_absolute_path( $gif_relative );
+	$r_relative_path = preg_replace( '/.jpg$/i', '_r.jpg', $picture['path'] );
+	$l_relative_path = preg_replace( '/.jpg$/i', '_l.jpg', $picture['path'] );
+	$r_absolute_path = Stereo_get_absolute_path( $r_relative_path );
+	$l_absolute_path = Stereo_get_absolute_path( $l_relative_path );
+
+	if ( !file_exists( $r_absolute_path ) ) {
+		Stereo_split_mpo( $picture['path'], $r_absolute_path, $l_absolute_path );
 	}
+	if ( !file_exists( $gif_absolute_path ) ) {
+		Stereo_generate_gif( $r_absolute_path, $l_absolute_path, $gif_absolute_path );
+	}
+	$template->set_filename( 'Stereo_footer', STEREO_PATH . '/stereo_footer.tpl' );
+
+	if ( isset( $_COOKIE[STEREO_MODE_COOKIE] ) ) {
+		$mode = $_COOKIE[STEREO_MODE_COOKIE];
+	} else {
+		$mode = STEREO_MODE_GIF;
+	}
+	$template->set_filename( 'Stereo_picture', STEREO_PATH . "/picture_$mode.tpl" );
 	$rel_dir = 'plugins/' . basename( realpath( __DIR__ . '/..' ) );
+	load_language('plugin.lang', STEREO_PATH);
+	$template->assign( array(
+		'REL_DIR' => $rel_dir,
+		'STEREO_FORMAT' => l10n( 'STEREO_FORMAT' ),
+		'STEREO_FORMAT_GIF' => l10n( 'STEREO_FORMAT_GIF' ),
+		'STEREO_FORMAT_CROSS_EYED' => l10n( 'STEREO_FORMAT_CROSS_EYED' ),
+		'STEREO_FORMAT_WALL_EYED' => l10n( 'STEREO_FORMAT_WALL_EYED' ),
+	) );
+	$checkedKey = strtoupper( $mode ) . '_SELECTED';
+	$template->assign( $checkedKey, 'checked' );
+	switch( $mode ) {
+		case STEREO_MODE_GIF:
+			Stereo_render_gif( $picture, $gif_relative );
+			break;
+		case STEREO_MODE_CROSS_EYED:
+		case STEREO_MODE_WALL_EYED:
+			Stereo_render_side_by_side( $r_relative_path, $l_relative_path );
+			break;
+	}
+	return $content .
+		$template->parse( 'Stereo_picture', true ) .
+		$template->parse( 'Stereo_footer', true );
+}
+
+function Stereo_render_gif( $picture, $gif_relative ) {
+	global $prefixeTable, $template;
+
+	$gif_url = PWG_DERIVATIVE_DIR . preg_replace( '/^\.\//', '', $gif_relative );
 	$query = '
 		SELECT *
 		FROM '.$prefixeTable.'stereo
@@ -44,25 +87,42 @@ function Stereo_render_element_content($content, $picture)
 	if ( $offset ) {
 		$jsOffset = ", { x: {$offset['x']}, y: {$offset['y']} }";
 	}
-	$template->set_filename( 'Stereo_picture', STEREO_PATH . '/picture.tpl' );
 	$template->assign( array(
 		'GIF_URL' => $gif_url,
-		'REL_DIR' => $rel_dir,
 		'WIGGLE_PARAMS' => $picture['id'] . $jsOffset,
 	) );
-	return $content . $template->parse( 'Stereo_picture', true );
 }
 
-function Stereo_generate_gif( $picture, $gif_path ) {
-	$orig_path = realpath( $picture['path'] );
+function Stereo_get_absolute_path( $path ) {
+	return realpath( PWG_DERIVATIVE_DIR ) . '/' . $path;
+}
 
-	$rjpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
-	$ljpg = tempnam( '/tmp', 'piwigo_Stereo_' ) . '.jpg';
+function Stereo_get_url( $path ) {
+	return PWG_DERIVATIVE_DIR . preg_replace( '/^\.\//', '', $path );
+}
 
-	// First split the MPO file into 2 JPEGs
+function Stereo_render_side_by_side( $r_path, $l_path ) {
+	global $template;
+	$r_url = Stereo_get_url( $r_path );
+	$l_url = Stereo_get_url( $l_path );
+	$template->assign( array(
+		'R_URL' => $r_url,
+		'L_URL' => $l_url,
+	) );
+}
+
+// Combine two jpgs into a single gif
+function Stereo_generate_gif( $rjpg, $ljpg, $gif_path ) {
+	// TODO: get rid of exec, though php-gd doesn't support animation
+	// TODO: multiple sizes?
+	exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
+}
+
+// Split the MPO file into 2 JPEGs
+function Stereo_split_mpo( $orig_path, $r_path, $l_path ) {
 	$marker = hex2bin( 'ffd8ffe1' ); // EXIF start-of-image + app1 header
 	$in = fopen( $orig_path, 'rb' );
-	$out = fopen( $rjpg, 'wb' ); // MPO stores the right image first
+	$out = fopen( $r_path, 'wb' ); // MPO stores the right image first
 	$chunk_size = 1024 * 100; // Read 100k at a time
 	$first = true; // Are we still reading / writing the first picture?
 	$last_chunk = ''; // Save in case the marker crosses a chunk boundary
@@ -84,7 +144,7 @@ function Stereo_generate_gif( $picture, $gif_path ) {
 				fwrite( $out, $chunk, $pos );
 				fclose( $out );
 				// Now open the second file and write the rest of the chunk
-				$out = fopen( $ljpg, 'wb' );
+				$out = fopen( $l_path, 'wb' );
 				fwrite( $out, substr( $chunk, $pos ) );
 				$first = false;
 			}
@@ -94,15 +154,6 @@ function Stereo_generate_gif( $picture, $gif_path ) {
 	} while ( !feof( $in ) );
 	fclose( $in );
 	fclose( $out );
-
-	// Then combine the two into a single gif
-	// TODO: get rid of exec, though php-gd doesn't support animation
-	// TODO: multiple sizes?
-	exec( "convert -loop 0 -delay 0 $ljpg -delay 0 $rjpg -resize 1024x $gif_path" );
-
-	// And delete the temp files
-	unlink( $rjpg );
-	unlink( $ljpg );
 }
 
 function Stereo_tabsheet( $tabs, $context ) {
