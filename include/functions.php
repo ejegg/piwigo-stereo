@@ -253,3 +253,144 @@ function Stereo_perform_batch_manager_prefilters( $filter_sets, $prefilter ) {
 
 	return $filter_sets;
 }
+
+/**
+ * Get a difference score for the two images with a given offset
+ *
+ * @param $left Imagick object for the left-eye image
+ * @param $right Imagick object for the right-eye image
+ * @param $w int width of images
+ * @param $h int height of images
+ * @param $offX int
+ * @param $offY int
+ *
+ * @return float Number from 0-1 representing how different the images are
+ */
+function Stereo_diff_images( $left, $right, $w, $h, $offX, $offY ) {
+	$newW = $w - abs( $offX );
+	$newH = $h - abs( $offY );
+	if ( $newW < 1 || $newH < 1 ) {
+		throw new RuntimeException( 'Offset greater than width or height!' );
+	}
+	$newLeft = clone $left;
+	$newRight = clone $right;
+	if ( $offX > 0 ) {
+		$xLeft = $offX;
+		$xRight = 0;
+	} else {
+		$xLeft = 0;
+		$xRight = -1 * $offX;
+	}
+	if ( $offY > 0 ) {
+		$yLeft = $offY;
+		$yRight = 0;
+	} else {
+		$yLeft = 0;
+		$yRight = -1 * $offY;
+	}
+	if ( $offX !== 0 || $offY !== 0 ) {
+		$newLeft->cropImage( $newW, $newH, $xLeft, $yLeft );
+		$newRight->cropImage( $newW, $newH, $xRight, $yRight );
+	}
+	$compare = $newLeft->compareImages( $newRight, Imagick::METRIC_MEANSQUAREERROR );
+	return $compare[1];
+}
+
+function Stereo_find_best_alignment(
+	$leftPath,
+	$rightPath,
+	$xGrid = 0.1,
+	$yGrid = 0.02,
+	$xRand = 0.05,
+	$yRand = 0.01,
+	$scaleFactor = 0.95
+) {
+	$left = new Imagick( $leftPath );
+	$right = new Imagick( $rightPath );
+	$w = $left->getImageWidth();
+	$h = $left->getImageHeight();
+	//$left->blurImage( $w / 200, 2 );
+	//$right->blurImage( $w / 200, 2 );
+	$bestX = 0;
+	$bestY = 0;
+	$bestDiff = 1;
+	// First check 9 evenly spaced grid points
+	for( $testX = -1; $testX < 2; $testX++ ) {
+		for ( $testY = -1; $testY < 2; $testY++ ) {
+			$offX = floor( $testX * $w * $xGrid );
+			$offY = floor( $testY * $h * $yGrid );
+			$score = Stereo_diff_images( $left, $right, $w, $h, $offX, $offY );
+			if ( $score < $bestDiff ) {
+				$bestDiff = $score;
+				$bestX = $offX;
+				$bestY = $offY;
+			}
+		}
+	}
+	// Then do some random searches around the best of those
+	$iter = 0;
+	$scale = 1;
+	do {
+		$testX = ( mt_rand( 0, 1000 ) - 500 ) / 1000;
+		$testY = ( mt_rand( 0, 1000 ) - 500 ) / 1000;
+		$offX = $bestX + round( $testX * $w * $xRand * $scale );
+		$offY = $bestY + round( $testY * $h * $yRand * $scale );
+		$score = Stereo_diff_images( $left, $right, $w, $h, $offX, $offY );
+		if ( $score < $bestDiff ) {
+			echo "$leftPath: Score for $offX, $offY is $score\n";
+			$bestDiff = $score;
+			$bestX = $offX;
+			$bestY = $offY;
+		}
+		$scale *= $scaleFactor;
+		$iter++;
+	} while ( $iter < 20 );
+	return array(
+		'x' => $bestX,
+		'y' => $bestY,
+		'd' => $bestDiff,
+	);
+}
+
+function Stereo_meta_align( $leftPath, $rightPath ) {
+	// Then do some random searches around the best of those
+	$iter = 0;
+	$scale = 1;
+	$bestScore = 1;
+	$xGrid = 0.1;
+	$yGrid = 0.02;
+	$xRand = 0.06;
+	$yRand = 0.01;
+	$scaleFactor = 0.98;
+	do {
+		$testXRand = $xRand + $xRand * ( mt_rand( 0, 1000 ) - 500 ) / 1000;
+		$testYRand = $yRand + $yRand * ( mt_rand( 0, 1000 ) - 500 ) / 1000;
+		$testScaleFactor = $scaleFactor + ( mt_rand( 0, 1000 ) - 500 ) / 10000;
+		if ( $testScaleFactor > 1 ) {
+			$testScaleFactor = 2 - $testScaleFactor;
+		}
+		$avg = 0;
+		for( $i = 1; $i < 6; $i++ ) {
+			$align = Stereo_find_best_alignment(
+				str_replace( 'l', 'l' . $i, $leftPath ),
+				str_replace( 'r', 'r' . $i, $rightPath ),
+				$xGrid,
+				$yGrid,
+				$testXRand,
+				$testYRand,
+				$testScaleFactor
+			);
+			$avg+= $align['d'];
+		}
+		$avg = $avg / 5;
+		if ( $avg < $bestScore ) {
+			echo "Score for $testXRand, $testYRand, $testScaleFactor, is $avg\n";
+			$bestScore = $avg;
+			$xRand = $testXRand;
+			$yRand = $testYRand;
+			$scaleFactor = $testScaleFactor;
+		}
+		$iter++;
+	} while ( $iter < 100 );
+	echo "Score for $xRand, $yRand, $scaleFactor, is $bestScore\n";
+}
