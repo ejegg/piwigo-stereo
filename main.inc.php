@@ -36,6 +36,7 @@ define('STEREO_MODE_CROSS_EYED', 'cross');
 define('STEREO_MODE_WALL_EYED', 'wall');
 
 $conf['picture_ext'][] = 'mpo';
+$conf['file_ext'][] = 'mpo';
 
 include_once( __DIR__ . '/include/functions.php' );
 

@@ -28,15 +28,17 @@ function Stereo_render_element_content($content, $picture)
 	if ( !preg_match ( '/.*mpo$/i', $picture['file'] ) ) {
 		return $content;
 	}
-	$gif_relative = preg_replace( '/jpg$/i', 'gif', $picture['path'] );
+	$picture_path = $picture['path'];
+	$without_extension = substr( $picture_path, 0, strrpos( $picture_path, '.' ) );
+	$gif_relative = $without_extension . '.gif';
 	$gif_absolute_path = Stereo_get_absolute_path( $gif_relative );
-	$r_relative_path = preg_replace( '/.jpg$/i', '_r.jpg', $picture['path'] );
-	$l_relative_path = preg_replace( '/.jpg$/i', '_l.jpg', $picture['path'] );
+	$r_relative_path = $without_extension . '_r.jpg';
+	$l_relative_path = $without_extension . '_l.jpg';
 	$r_absolute_path = Stereo_get_absolute_path( $r_relative_path );
 	$l_absolute_path = Stereo_get_absolute_path( $l_relative_path );
 
 	if ( !file_exists( $r_absolute_path ) ) {
-		Stereo_split_mpo( $picture['path'], $r_absolute_path, $l_absolute_path );
+		Stereo_split_mpo( $picture_path, $r_absolute_path, $l_absolute_path );
 	}
 	if ( !file_exists( $gif_absolute_path ) ) {
 		Stereo_generate_gif( $r_absolute_path, $l_absolute_path, $gif_absolute_path );
