@@ -442,7 +442,7 @@
         var transparency = null;
         var delay = null;
         var disposalMethod = null;
-        var disposalRestoreFromIdx = 0;
+        var disposalRestoreFromIdx = null;
         var lastDisposalMethod = null;
         var frame = null;
         var lastImg = null;
@@ -464,6 +464,9 @@
         var overrideLoopMode = (options.hasOwnProperty('loop_mode') ? options.loop_mode : 'auto');
         var drawWhileLoading = (options.hasOwnProperty('draw_while_loading') ? options.draw_while_loading : true);
         var showProgressBar = drawWhileLoading ? (options.hasOwnProperty('show_progress_bar') ? options.show_progress_bar : true) : false;
+        var progressBarHeight = (options.hasOwnProperty('progressbar_height') ? options.progressbar_height : 25);
+        var progressBarBackgroundColor = (options.hasOwnProperty('progressbar_background_color') ? options.progressbar_background_color : 'rgba(255,255,255,0.4)');
+        var progressBarForegroundColor = (options.hasOwnProperty('progressbar_foreground_color') ? options.progressbar_foreground_color : 'rgba(255,0,22,.8)');
 
         var clear = function () {
             transparency = null;
@@ -513,13 +516,13 @@
                 frameOffsets[frame].y = offset.y;
             }
             if (typeof offset.r !== 'undefined') {
-				frameOffsets[frame].r = offset.r;
+                frameOffsets[frame].r = offset.r;
             }
         };
 
         var doShowProgress = function (pos, length, draw) {
             if (draw && showProgressBar) {
-                var height = 25;
+                var height = progressBarHeight;
                 var left, mid, top, width;
                 if (options.is_vp) {
                     if (!ctx_scaled) {
@@ -554,13 +557,11 @@
                     width = canvas.width / (ctx_scaled ? get_canvas_scale() : 1 );
                     height /= ctx_scaled ? get_canvas_scale() : 1;
                 }
-                // XXX Figure out alpha fillRect.
-                //ctx.fillStyle = 'salmon';
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+
+                ctx.fillStyle = progressBarBackgroundColor;
                 ctx.fillRect(mid, top, width - mid, height);
 
-                //ctx.fillStyle = 'teal';
-                ctx.fillStyle = 'rgba(255,0,22,.8)';
+                ctx.fillStyle = progressBarForegroundColor;
                 ctx.fillRect(0, top, mid, height);
             }
         };
@@ -638,7 +639,13 @@
             if (currIdx > 0) {
                 if (lastDisposalMethod === 3) {
                     // Restore to previous
-                    frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
+                    // If we disposed every frame including first frame up to this point, then we have
+                    // no composited frame to restore to. In this case, restore to background instead.
+                    if (disposalRestoreFromIdx !== null) {
+                    	frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
+                    } else {
+                    	frame.clearRect(lastImg.leftPos, lastImg.topPos, lastImg.width, lastImg.height);
+                    }
                 } else {
                     disposalRestoreFromIdx = currIdx - 1;
                 }
@@ -657,17 +664,15 @@
             var imgData = frame.getImageData(img.leftPos, img.topPos, img.width, img.height);
 
             //apply color table colors
-            var cdd = imgData.data;
             img.pixels.forEach(function (pixel, i) {
                 // imgData.data === [R,G,B,A,R,G,B,A,...]
                 if (pixel !== transparency) {
-                    cdd[i * 4 + 0] = ct[pixel][0];
-                    cdd[i * 4 + 1] = ct[pixel][1];
-                    cdd[i * 4 + 2] = ct[pixel][2];
-                    cdd[i * 4 + 3] = 255; // Opaque.
+                    imgData.data[i * 4 + 0] = ct[pixel][0];
+                    imgData.data[i * 4 + 1] = ct[pixel][1];
+                    imgData.data[i * 4 + 2] = ct[pixel][2];
+                    imgData.data[i * 4 + 3] = 255; // Opaque.
                 }
             });
-            imgData.data.set(cdd);
 
             frame.putImageData(imgData, img.leftPos, img.topPos);
 
@@ -678,8 +683,10 @@
 
             // We could use the on-page canvas directly, except that we draw a progress
             // bar for each image chunk (not just the final image).
-            if (drawWhileLoading)
+            if (drawWhileLoading) {
                 ctx.drawImage(tmpCanvas, 0, 0);
+                drawWhileLoading = options.auto_play;
+            }
 
             lastImg = img;
         };
@@ -706,14 +713,21 @@
                 putFrame();
             };
 
-            var completeLoop = function () {
-                if (onEndListener !== null)
-                    onEndListener(gif);
-                iterationCount++;
-            };
-
             var step = (function () {
                 var stepping = false;
+
+                var completeLoop = function () {
+                    if (onEndListener !== null)
+                        onEndListener(gif);
+                    iterationCount++;
+
+                    if (overrideLoopMode !== false || iterationCount < 0) {
+                        doStep();
+                    } else {
+                        stepping = false;
+                        playing = false;
+                    }
+                };
 
                 var doStep = function () {
                     stepping = playing;
@@ -726,12 +740,10 @@
                     var nextFrameNo = getNextFrameNo();
                     if (nextFrameNo === 0) {
                         delay += loopDelay;
-                        setTimeout(completeLoop, delay - 1);
-                    }
-
-                    if ((overrideLoopMode !== false || nextFrameNo !== 0 || iterationCount < 0))
+                        setTimeout(completeLoop, delay);
+                    } else {
                         setTimeout(doStep, delay);
-
+                    }
                 };
 
                 return function () {
@@ -755,12 +767,14 @@
 
                 tmpCanvas.getContext("2d").putImageData(frames[i].data, offset.x, offset.y);
                 ctx.globalCompositeOperation = "copy";
-				ctx.save();
                 if (offset.r) {
-					ctx.rotate( offset.r * Math.PI / 360 );
-				}
+                    ctx.save();
+                    ctx.rotate(offset.r * Math.PI / 180);
+                }
                 ctx.drawImage(tmpCanvas, 0, 0);
-				ctx.restore();
+                if (offset.r) {
+                    ctx.restore();
+                }
             };
 
             var play = function () {
@@ -897,7 +911,7 @@
             loading = true;
             frames = [];
             clear();
-            disposalRestoreFromIdx = 0;
+            disposalRestoreFromIdx = null;
             lastDisposalMethod = null;
             frame = null;
             lastImg = null;
@@ -913,7 +927,7 @@
             move_to: player.move_to,
 
             // getters for instance vars
-            get_playing      : function() { return player.playing },
+            get_playing      : function() { return playing },
             get_canvas       : function() { return canvas },
             get_canvas_scale : function() { return get_canvas_scale() },
             get_loading      : function() { return loading },
@@ -924,20 +938,47 @@
                 if (!load_setup(callback)) return;
 
                 var h = new XMLHttpRequest();
-                h.overrideMimeType('text/plain; charset=x-user-defined');
+                // new browsers (XMLHttpRequest2-compliant)
+                h.open('GET', src, true);
+
+                if ('overrideMimeType' in h) {
+                    h.overrideMimeType('text/plain; charset=x-user-defined');
+                }
+
+                // old browsers (XMLHttpRequest-compliant)
+                else if ('responseType' in h) {
+                    h.responseType = 'arraybuffer';
+                }
+
+                // IE9 (Microsoft.XMLHTTP-compliant)
+                else {
+                    h.setRequestHeader('Accept-Charset', 'x-user-defined');
+                }
+
                 h.onloadstart = function() {
                     // Wait until connection is opened to replace the gif element with a canvas to avoid a blank img
                     if (!initialized) init();
                 };
                 h.onload = function(e) {
-                    stream = new Stream(h.responseText);
+                    if (this.status != 200) {
+                        doLoadError('xhr - response');
+                    }
+                    // emulating response field for IE9
+                    if (!('response' in this)) {
+                        this.response = new VBArray(this.responseText).toArray().map(String.fromCharCode).join('');
+                    }
+                    var data = this.response;
+                    if (data.toString().indexOf("ArrayBuffer") > 0) {
+                        data = new Uint8Array(data);
+                    }
+
+                    stream = new Stream(data);
                     setTimeout(doParse, 0);
                 };
                 h.onprogress = function (e) {
                     if (e.lengthComputable) doShowProgress(e.loaded, e.total, true);
                 };
                 h.onerror = function() { doLoadError('xhr'); };
-                h.open('GET', src, true);
                 h.send();
             },
             load: function (callback) {
