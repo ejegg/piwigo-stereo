@@ -46,28 +46,32 @@ if (isset($_POST['submit']))
 
 	$offsetX = trim($_POST['offsetX']);
 	$offsetY = trim($_POST['offsetY']);
+	$rotation = trim($_POST['rotation']);
 	if (
 		strlen($offsetX) === 0 ||
 		strlen($offsetY) === 0 ||
+		strlen($rotation) === 0 ||
 		!is_numeric($offsetX) ||
-		!is_numeric($offsetY)
+		!is_numeric($offsetY) ||
+		!is_numeric($rotation)
 	) {
 		$page['errors'][] = 'Invalid offset value';
 	}
 
+	$rotation = round($rotation, 1);
 	if (count($page['errors']) === 0 ) {
 		$stereoTable = $prefixeTable.'stereo';
 		if ( isset($picture['x']) ) {
 			$query =
 				"UPDATE $stereoTable
-				SET x=$offsetX, y=$offsetY
+				SET x=$offsetX, y=$offsetY, r=$rotation
 				WHERE media_id = $id;";
 		} else {
 			$picture['x'] = $offsetX;
 			$picture['y'] = $offsetY;
 			$query =
-				"INSERT INTO $stereoTable (media_id, x, y)
-				VALUES ($id, $offsetX, $offsetY)";
+				"INSERT INTO $stereoTable (media_id, x, y, r)
+				VALUES ($id, $offsetX, $offsetY, $rotation)";
 		}
 		pwg_query($query);
 		array_push( $page['infos'], l10n( 'STEREO_EDIT_SUCCESS' ) );
@@ -91,6 +95,7 @@ $template->assign(array(
 	'PICTURE'   => Stereo_render_element_content('', $picture),
 	'OFFSET_X'  => empty( $picture['x'] ) ? 0 : $picture['x'],
 	'OFFSET_Y'  => empty( $picture['y'] ) ? 0 : $picture['y'],
+	'ROTATION'  => empty( $picture['r'] ) ? 0 : $picture['r'],
 ));
 
 $template->set_filename('plugin_admin_content', STEREO_PATH . 'admin.tpl');

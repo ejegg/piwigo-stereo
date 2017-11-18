@@ -453,7 +453,7 @@
         var ctx_scaled = false;
 
         var frames = [];
-        var frameOffsets = []; // elements have .x and .y properties
+        var frameOffsets = []; // elements have .x, .y, and .r properties
 
         var gif = options.gif;
         if (typeof options.auto_play == 'undefined')
@@ -511,6 +511,9 @@
             }
             if (typeof offset.y !== 'undefined') {
                 frameOffsets[frame].y = offset.y;
+            }
+            if (typeof offset.r !== 'undefined') {
+				frameOffsets[frame].r = offset.r;
             }
         };
 
@@ -604,7 +607,7 @@
                             data: frame.getImageData(0, 0, hdr.width, hdr.height),
                             delay: delay
                         });
-            frameOffsets.push({ x: 0, y: 0 });
+            frameOffsets.push({ x: 0, y: 0, r: 0 });
         };
 
         var doImg = function (img) {
@@ -752,7 +755,12 @@
 
                 tmpCanvas.getContext("2d").putImageData(frames[i].data, offset.x, offset.y);
                 ctx.globalCompositeOperation = "copy";
+				ctx.save();
+                if (offset.r) {
+					ctx.rotate( offset.r * Math.PI / 360 );
+				}
                 ctx.drawImage(tmpCanvas, 0, 0);
+				ctx.restore();
             };
 
             var play = function () {

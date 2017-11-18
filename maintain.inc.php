@@ -28,6 +28,7 @@ function plugin_install() {
       media_id int(11) NOT NULL,
       x int NOT NULL DEFAULT 0,
       y int NOT NULL DEFAULT 0,
+      r float(5,1) NOT NULL DEFAULT 0,
       PRIMARY KEY (media_id)
     ) ENGINE = MyISAM
     ;';

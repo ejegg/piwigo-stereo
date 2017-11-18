@@ -87,7 +87,10 @@ function Stereo_render_gif( $picture, $gif_relative ) {
 	$offset = pwg_db_fetch_assoc(pwg_query($query));
 	$jsOffset = '';
 	if ( $offset ) {
-		$jsOffset = ", { x: {$offset['x']}, y: {$offset['y']} }";
+		if ( !isset( $offset['r'] ) ) {
+			$offset['r'] = 0;
+		}
+		$jsOffset = ", { x: {$offset['x']}, y: {$offset['y']}, r: {$offset['r']} }";
 	}
 	$template->assign( array(
 		'GIF_URL' => $gif_url,
@@ -215,6 +218,7 @@ function Stereo_element_set_global_action( $action, $collection ) {
 
 	$x = trim( $_POST['offsetX'] );
 	$y = trim( $_POST['offsetY'] );
+	$r = trim( $_POST['rotation'] );
 
 	$set = array();
 	if ( $x !== '' && is_numeric( $x ) ) {
@@ -223,10 +227,14 @@ function Stereo_element_set_global_action( $action, $collection ) {
 	if ( $y !== '' && is_numeric( $y ) ) {
 		$set[] = "y = $y";
 	}
+	if ( $r !== '' && is_numeric( $r ) ) {
+		$set[] = "r = $r";
+	}
 
 	if ( empty( $set ) ) {
 		$page['errors'][] = l10n( 'STEREO_BATCH_NO_INPUT' );
 	} else {
+		// FIXME: this should be INSERT...ON DUPLICATE KEY UPDATE...
 		$update_query = 'UPDATE ' . $prefixeTable . 'stereo SET ' .
 			implode( ',', $set ) .
 			' WHERE media_id IN (' . implode( ',', $collection ) . ')';

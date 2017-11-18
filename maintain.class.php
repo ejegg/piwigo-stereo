@@ -22,7 +22,7 @@ if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
 
 class stereo_maintain {
-	function install($plugin_version, &$errors=array()) {
+	public function install($plugin_version, &$errors=array()) {
 		global $prefixeTable;
 
 		$query = '
@@ -30,12 +30,24 @@ class stereo_maintain {
 			  media_id int(11) NOT NULL,
 			  x int NOT NULL DEFAULT 0,
 			  y int NOT NULL DEFAULT 0,
+			  r float(5,1) NOT NULL DEFAULT 0,
 			  PRIMARY KEY (media_id)
 			);';
 		pwg_query($query);
 	}
 
-	function uninstall() {
+	public function update($old_version, $new_version, &$errors=array()) {
+		global $prefixeTable;
+
+		if ($old_version !== 'auto' && version_compare($old_version, '0.3.2', '<=')) {
+			$query = '
+				ALTER TABLE '.$prefixeTable.'stereo
+				ADD r float(5,1) NOT NULL DEFAULT 0;';
+			pwg_query($query);
+		}
+	}
+
+	public function uninstall() {
 		global $prefixeTable;
 
 		$query = '
@@ -43,7 +55,20 @@ class stereo_maintain {
 
 		pwg_query($query);
 	}
+
+	public function activate() {}
+	public function deactivate() {}
 }
 
 // Need to use class_alias because id has '-' in it.
 class_alias('stereo_maintain', 'piwigo-stereo_maintain');
+
+function plugin_install($plugin_id, $plugin_version, &$errors) {
+	$legacyInstance = new stereo_maintain();
+	$legacyInstance->install($plugin_version, $errors);
+}
+
+function plugin_uninstall($plugin_id) {
+	$legacyInstance = new stereo_maintain();
+	$legacyInstance->uninstall();
+}

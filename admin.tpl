@@ -5,6 +5,7 @@
 <form id="stereoForm" method="post" action="{$F_ACTION}">
     <input type="hidden" name="offsetX" id="offsetX" value="{$OFFSET_X}">
     <input type="hidden" name="offsetY" id="offsetY" value="{$OFFSET_Y}">
+    <input type="hidden" name="rotation" id="rotation" value="{$ROTATION}">
     <input type="hidden" name="pwg_token" value="{$PWG_TOKEN}">
 <p>
     <input class="submit" type="submit" value="{'Save Settings'|@translate}" name="submit"/>
@@ -17,5 +18,6 @@
         offset = adjust.getOffset();
         form.offsetX.value = offset.x;
         form.offsetY.value = offset.y;
+        form.rotation.value = offset.r;
     }
 </script>
