@@ -62,6 +62,8 @@ class stereo_maintain {
 
 // Need to use class_alias because id has '-' in it.
 class_alias('stereo_maintain', 'piwigo-stereo_maintain');
+// Newer versions of Piwigo now replace the - with a _
+class_alias('stereo_maintain', 'piwigo_stereo_maintain');
 
 function plugin_install($plugin_id, $plugin_version, &$errors) {
 	$legacyInstance = new stereo_maintain();
